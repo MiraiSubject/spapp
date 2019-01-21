@@ -29,14 +29,16 @@ Let's consider structure of simple "contact list" web application:
 </body>
 ```
 We have `<nav>`igation section here and collection of `<section>`s - views that need to be presented when user clicks
-on one of hyperlinks in the nav bar (or anywhere else). Also, if you want to load a section by default, simply add the `default` attribute.
+on one of hyperlinks in the nav bar (or anywhere else). 
 
 ## Routing 
   
-By definig `<section id="some id">` element in your markup you actually define a route. When browser is navigated to
+By defining `<section id="some id">` element in your markup you actually define a route. When browser is navigated to
 `{url of your app}#id-of-section` the SPApp module catches this event and shows `<section>` with that ID. 
 
 No special mechanism for declaring routes is required - simply declare `<section>`s with proper IDs.
+
+If you want to load some section by default, simply add the `default` attribute to it.
 
 ## Views and Controllers
 
@@ -143,6 +145,33 @@ body.view-b > nav > a[href="#view-b"],
 body.view-c > nav > a[href="#view-c"] { background:white; color:black; }
 ```
 
+## app.get - the page getter function
+
+When SPAapp needs to download page's html it calls `app.get(url, $page, pageName)` function. Default implementation of the `app.get` is as follows:
+
+```javascript
+app.get = function(src,$page,pageName) { 
+  // src - string, url of the page to load
+  // $page - jq wrapper, page element
+  // pageName - string, name of the page to load
+  return $.get(src, "html"); 
+};
+```
+so it just delegates page downloading to jQuery and returns promise obtained from `$.get()`.  
+
+In your application you can override that default loader to have something like this:
+
+```javascript
+app.get = function(src,$page,pageName) { 
+  var rq = $.get(src, "html"); 
+      // generate load events 
+      rq.done( function(html,textStatus,jqXHR) { $page.trigger("page.loadsuccess",jqXHR); } ) 
+        .fail( function(jqXHR,textStatus,errorThrown) { $page.trigger("page.loadfailure",jqXHR,textStatus,errorThrown); } );
+  // NOTE: your custom page downloader shall return jq promise
+  return rq;
+};
+```
+
 # Wrapping up
 
 It is not strictly required for controller's code to be placed inside the view markup, you can put them in separate script files and include as any other scripts:
@@ -172,7 +201,8 @@ In the same way markup for views can be provided inline without use of external 
   </section>
 ```
 
-#Live Demo
+# Live Demo
 
- Check this [SPApp in action demo](http://terrainformatica.com/widgets.js/spapp/index.htm). I've created it in explicitly simple and minimalistic fashion in order to highlight just SPAapp. I have projects where it works in Twitter Bootstrap environment for example.
+ Check this [SPApp in action demo](https://rawgit.com/c-smile/spapp/master/demo/index.htm). I've created it in explicitly simple and minimalistic fashion in order to highlight just SPAapp. I have projects where it works in Twitter Bootstrap environment for example.
 
+And check [Team ToolBox](https://lduboeuf.github.io/team-tool-box) application where SpApp is used.
